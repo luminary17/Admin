@@ -77,6 +77,11 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--txt);min-h
 .admin-word-group-inner::-webkit-scrollbar{width:4px;}
 .admin-word-group-inner::-webkit-scrollbar-thumb{background:var(--acc);border-radius:4px;}
 
+/* MOCK TABS */
+.mock-tab{padding:6px 13px;border-radius:8px;border:1.5px solid rgba(0,0,0,.1);background:#fff;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:.15s;color:#555;}
+.mock-tab.active{background:var(--acc);color:#fff;border-color:var(--acc);}
+.mock-tab:hover:not(.active){background:#f0f0f0;}
+
 /* UNDO TOAST */
 .undo-toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:#1a1a1a;color:#fff;padding:11px 18px;border-radius:12px;display:flex;align-items:center;gap:12px;font-size:13px;font-weight:600;box-shadow:0 6px 24px rgba(0,0,0,.25);z-index:9999;transition:transform .3s cubic-bezier(.34,1.56,.64,1);white-space:nowrap;}
 .undo-toast.show{transform:translateX(-50%) translateY(0);}
@@ -162,42 +167,31 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--txt);min-h
 <div class="admin-wrap">
   <div id="success-area"></div>
 
-  <!-- BOOKS -->
-  <div class="admin-sec collapsed" id="as-books">
-    <div class="admin-sec-head" onclick="toggleSec('as-books')">
-      <h3>📚 Books</h3><span class="admin-sec-arrow">▼</span>
+  <!-- MOCK TESTS -->
+  <div class="admin-sec collapsed" id="as-mock-tests">
+    <div class="admin-sec-head" onclick="toggleSec('as-mock-tests')">
+      <h3>🧪 Mock Tests</h3><span class="admin-sec-arrow">▼</span>
     </div>
     <div class="admin-sec-body">
-      <div class="form-group"><label>Title</label><input id="bk-title" placeholder="Book title"></div>
-      <div class="form-group"><label>Author</label><input id="bk-author" placeholder="Author"></div>
-      <div class="form-group">
-        <label>Cover Image</label>
-        <div class="img-upload-area" onclick="document.getElementById('bk-cover-file').click()">
-          <div style="font-size:13px;color:#aaa;">📷 Нажми чтобы загрузить обложку</div>
-          <input type="file" id="bk-cover-file" accept="image/*" onchange="previewImg(this,'bk-cover-preview','bk-cover-data')">
-          <img id="bk-cover-preview" class="img-preview">
-        </div>
-        <input type="hidden" id="bk-cover-data">
+      <!-- Category tabs -->
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;" id="mock-tabs">
+        <button class="mock-tab active" onclick="switchMockTab('sat/reading',this)">SAT Reading</button>
+        <button class="mock-tab" onclick="switchMockTab('sat/math',this)">SAT Math</button>
+        <button class="mock-tab" onclick="switchMockTab('ielts/speaking',this)">IELTS Speaking</button>
+        <button class="mock-tab" onclick="switchMockTab('ielts/writing',this)">IELTS Writing</button>
+        <button class="mock-tab" onclick="switchMockTab('ielts/reading',this)">IELTS Reading</button>
+        <button class="mock-tab" onclick="switchMockTab('ielts/listening',this)">IELTS Listening</button>
       </div>
-      <button class="btn-primary" id="bk-save-btn" onclick="saveBook()">➕ Create Book</button>
-      <button class="btn-cancel" id="bk-cancel-btn" onclick="cancelBook()" style="display:none;">Cancel Edit</button>
-      <div class="item-list" id="bk-list" style="margin-top:14px;"></div>
-    </div>
-  </div>
-
-  <!-- BOOK EDITOR (hidden) -->
-  <div class="admin-sec" id="as-book-editor" style="display:none;">
-    <div class="admin-sec-body" style="padding-top:16px;">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
-        <button class="icon-btn" onclick="closeBookEditor()"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg></button>
-        <div><div id="be-title" style="font-weight:800;font-size:16px;"></div><div id="be-stats" style="font-size:12px;color:#aaa;"></div></div>
+      <input type="hidden" id="mock-current-path" value="sat/reading">
+      <!-- Add form -->
+      <div style="background:var(--bg);padding:16px;border-radius:13px;margin-bottom:14px;">
+        <div class="form-group"><label>Title</label><input id="mock-title" placeholder="e.g. SAT Reading Test 1"></div>
+        <div class="form-group"><label>URL</label><input id="mock-url" placeholder="https://..."></div>
+        <div class="form-group"><label>Description <span style="font-weight:400;color:#bbb;">(optional)</span></label><input id="mock-desc" placeholder="e.g. 52 questions, 65 min"></div>
+        <button class="btn-primary" onclick="addMockTest()">➕ Add Test</button>
       </div>
-      <div id="be-chapters"></div>
-      <div style="background:var(--bg);border-radius:13px;padding:16px;margin-top:12px;">
-        <div style="font-weight:800;font-size:14px;margin-bottom:10px;">➕ Add Chapter</div>
-        <div class="form-group"><input id="be-ch-title" placeholder="Chapter title"></div>
-        <button class="btn-primary" onclick="addChapter()">Add Chapter</button>
-      </div>
+      <!-- List -->
+      <div id="mock-list"></div>
     </div>
   </div>
 
@@ -1567,11 +1561,60 @@ async function runImport(type){
 // =============================================
 //  INIT
 // =============================================
+// =============================================
+//  MOCK TESTS
+// =============================================
+function switchMockTab(path, btn){
+  document.getElementById('mock-current-path').value = path;
+  document.querySelectorAll('.mock-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  loadMockTests();
+}
+async function loadMockTests(){
+  const path = document.getElementById('mock-current-path').value;
+  const{db,ref,get}=window.fb;
+  const snap = await get(ref(db,`mocks/${path}`));
+  const items = snap.val() ? Object.entries(snap.val()).map(([k,v])=>({id:k,...v})) : [];
+  const el = document.getElementById('mock-list');
+  if(!items.length){el.innerHTML='<p style="color:#aaa;text-align:center;padding:16px;font-size:13px;">No tests yet</p>';return;}
+  el.innerHTML = items.map(t=>`
+    <div class="item-row">
+      <div class="item-row-info">
+        <div class="item-row-title">${t.title}</div>
+        <div class="item-row-sub">${t.url}${t.desc?` · ${t.desc}`:''}</div>
+      </div>
+      <button class="btn-del" onclick="deleteMockTest('${path}','${t.id}')">🗑️</button>
+    </div>`).join('');
+}
+async function addMockTest(){
+  const path = document.getElementById('mock-current-path').value;
+  const title = document.getElementById('mock-title').value.trim();
+  const url   = document.getElementById('mock-url').value.trim();
+  const desc  = document.getElementById('mock-desc').value.trim();
+  if(!title||!url){alert('Fill title and URL');return;}
+  const{db,ref,push,set}=window.fb;
+  await set(push(ref(db,`mocks/${path}`)),{title,url,...(desc?{desc}:{})});
+  document.getElementById('mock-title').value='';
+  document.getElementById('mock-url').value='';
+  document.getElementById('mock-desc').value='';
+  showSuccess('Test added! ✅');
+  loadMockTests();
+}
+async function deleteMockTest(path,id){
+  if(!confirm('Delete this test?'))return;
+  await window.fb.remove(window.fb.ref(window.fb.db,`mocks/${path}/${id}`));
+  showSuccess('Deleted!');loadMockTests();
+}
+
+// =============================================
+//  INIT
+// =============================================
 window.addEventListener('fbReady',()=>{
   loadAdminAll();
+  loadMockTests();
 });
 // Fallback if fbReady already fired
-if(window.fb){loadAdminAll();}
+if(window.fb){loadAdminAll();loadMockTests();}
 </script>
 
 <!-- FIREBASE SDK -->
