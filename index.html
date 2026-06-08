@@ -4,28 +4,28 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://apis.google.com https://*.firebasedatabase.app; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://*.firebasedatabase.app https://www.gstatic.com wss://*.firebaseio.com wss://*.firebasedatabase.app; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com;">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://apis.google.com https://*.firebasedatabase.app; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://*.firebasedatabase.app https://www.gstatic.com wss://*.firebaseio.com wss://*.firebasedatabase.app; frame-src https://*.firebasedatabase.app; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com;">
 <title>Luminary — Admin Panel</title>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0a1628;--card:#0f2035;--txt:#dde8f4;--acc:#4a9eda;--acc2:#3a8bc9;}
+:root{--bg:#0a1628;--card:#0f2035;--card2:#162840;--txt:#dde8f4;--muted:#7a94b0;--acc:#4a9eda;--acc2:#3a8bc9;--border:rgba(255,255,255,.08);}
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;}
 
 /* HEADER */
-.admin-header{position:sticky;top:0;left:0;width:100%;background:#fff;box-shadow:0 2px 16px rgba(0,0,0,0.06);z-index:100;padding:0 clamp(14px,4vw,28px);height:clamp(56px,8vh,68px);display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.admin-header{position:sticky;top:0;left:0;width:100%;background:var(--card);border-bottom:1px solid var(--border);z-index:100;padding:0 clamp(14px,4vw,28px);height:clamp(56px,8vh,68px);display:flex;align-items:center;justify-content:space-between;gap:12px;}
 .logo{font-weight:800;font-size:clamp(17px,4vw,22px);color:var(--acc);letter-spacing:-1px;}
-.logo span{color:#888;font-weight:600;font-size:clamp(11px,2.5vw,14px);margin-left:6px;letter-spacing:0;}
-.header-status{font-size:12px;color:#aaa;font-weight:700;}
+.logo span{color:var(--muted);font-weight:600;font-size:clamp(11px,2.5vw,14px);margin-left:6px;letter-spacing:0;}
+.header-status{font-size:12px;color:var(--muted);font-weight:700;}
 
 /* MAIN LAYOUT */
 .admin-wrap{max-width:780px;margin:0 auto;padding:clamp(16px,4vw,28px) clamp(12px,3vw,20px) 100px;}
 .admin-page-title{font-size:clamp(20px,5vw,26px);font-weight:800;margin-bottom:clamp(14px,4vw,22px);color:var(--txt);}
 
 /* ADMIN SECTIONS */
-.admin-sec{background:#fff;border-radius:16px;margin-bottom:12px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,0.05);border:1px solid rgba(0,0,0,0.06);}
+.admin-sec{background:var(--card);border-radius:16px;margin-bottom:12px;overflow:hidden;border:1px solid var(--border);}
 .admin-sec-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;cursor:pointer;user-select:none;}
-.admin-sec-head h3{font-size:clamp(13px,3.5vw,16px);font-weight:800;margin:0;}
+.admin-sec-head h3{font-size:clamp(13px,3.5vw,16px);font-weight:800;margin:0;color:var(--txt);}
 .admin-sec-arrow{font-size:14px;color:var(--acc);transition:.3s;}
 .admin-sec.collapsed .admin-sec-arrow{transform:rotate(-90deg);}
 .admin-sec-body{padding:0 20px 20px;overflow:hidden;transition:max-height .3s,opacity .3s,padding .3s;max-height:9999px;opacity:1;}
@@ -33,20 +33,22 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--txt);min-h
 
 /* FORM */
 .form-group{margin-bottom:12px;}
-.form-group label{display:block;font-weight:700;font-size:13px;margin-bottom:6px;}
-.form-group input,.form-group textarea,.form-group select{width:100%;padding:11px 14px;border:2px solid rgba(0,0,0,.1);border-radius:12px;font-family:inherit;font-size:14px;background:#fff;outline:none;transition:.2s;}
+.form-group label{display:block;font-weight:700;font-size:13px;margin-bottom:6px;color:var(--muted);}
+.form-group input,.form-group textarea,.form-group select{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:12px;font-family:inherit;font-size:14px;background:var(--card2);color:var(--txt);outline:none;transition:.2s;}
 .form-group input:focus,.form-group textarea:focus,.form-group select:focus{border-color:var(--acc);}
+.form-group input::placeholder,.form-group textarea::placeholder{color:var(--muted);}
 .form-group textarea{resize:vertical;min-height:72px;}
+.form-group select option{background:var(--card2);color:var(--txt);}
 .btn-primary{background:var(--acc);border:none;padding:12px 20px;border-radius:12px;font-family:inherit;font-size:14px;font-weight:700;color:#fff;cursor:pointer;width:100%;transition:.2s;}
 .btn-primary:hover{background:var(--acc2);transform:translateY(-1px);}
 .btn-cancel{background:none;border:2px solid #ff4444;color:#ff4444;padding:11px 20px;border-radius:12px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;width:100%;margin-top:8px;}
 .btn-del{background:#ff4444;border:none;padding:7px 14px;border-radius:8px;color:#fff;cursor:pointer;font-family:inherit;font-weight:700;font-size:12px;}
 .btn-edit{background:#e8f0ff;border:none;padding:7px 14px;border-radius:8px;color:#2563eb;cursor:pointer;font-family:inherit;font-weight:700;font-size:12px;}
-.success-msg{background:#4CAF50;color:#fff;padding:10px 16px;border-radius:10px;margin-bottom:12px;text-align:center;font-weight:700;font-size:14px;}
-.item-row{background:var(--bg);padding:13px;border-radius:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:10px;}
+.success-msg{background:rgba(34,197,94,.2);color:#4ade80;border:1px solid rgba(34,197,94,.3);padding:10px 16px;border-radius:10px;margin-bottom:12px;text-align:center;font-weight:700;font-size:14px;}
+.item-row{background:var(--card2);padding:13px;border-radius:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:10px;border:1px solid var(--border);}
 .item-row-info{flex:1;min-width:0;}
-.item-row-title{font-weight:700;font-size:14px;}
-.item-row-sub{font-size:12px;color:#888;margin-top:2px;}
+.item-row-title{font-weight:700;font-size:14px;color:var(--txt);}
+.item-row-sub{font-size:12px;color:var(--muted);margin-top:2px;}
 
 /* IMAGE UPLOAD */
 .img-upload-area{border:2px dashed rgba(0,0,0,.15);border-radius:12px;padding:16px;text-align:center;cursor:pointer;transition:.2s;background:#fafafa;}
@@ -571,9 +573,6 @@ function previewImg(input,previewId,dataId){
 async function loadAdminAll(){
   document.getElementById('header-status').textContent='Loading...';
   const{db,ref,get}=window.fb;
-  const bs=await get(ref(db,'books'));
-  allBooks=bs.val()?Object.keys(bs.val()).map(k=>({id:k,...bs.val()[k]})):[];
-  renderAdminBooks();
   await loadFolders('sat');
   await loadFolders('ielts');
   await loadAdminWords('sat');
