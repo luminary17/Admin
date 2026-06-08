@@ -149,7 +149,6 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--txt);min-h
   .match-grid{gap:5px;}
 }
 </style>
-  <script type="module" crossorigin src="/assets/index-BvE2edbh.js"></script>
 </head>
 <body>
 
@@ -1572,6 +1571,28 @@ window.addEventListener('fbReady',()=>{
 });
 // Fallback if fbReady already fired
 if(window.fb){loadAdminAll();}
+</script>
+
+<!-- FIREBASE SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, get, set, push, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCdA6I-a8eYZz1NFUpctYLIa-h56Rh1jNU",
+    authDomain: "dataluminary.firebaseapp.com",
+    databaseURL: "https://dataluminary-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "dataluminary",
+    storageBucket: "dataluminary.firebasestorage.app",
+    messagingSenderId: "136281703091",
+    appId: "1:136281703091:web:632b8d1bbb202f9d95a6c6"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  window.fb = { db, ref, get, set, push, remove };
+  window.dispatchEvent(new Event('fbReady'));
 </script>
 </body>
 </html>
