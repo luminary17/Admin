@@ -1591,7 +1591,7 @@ async function runImport(type){
 //  QUESTION BANK
 // =============================================
 async function loadQBankAdmin(){
-  const{db,ref,get}=window.fb;
+  const{db,ref,get}=window.fb2;
   const snap=await get(ref(db,'question-bank/sat'));
   const items=snap.val()?Object.entries(snap.val()).map(([k,v])=>({id:k,...v})):[];
   const el=document.getElementById('qb-list');
@@ -1618,7 +1618,7 @@ async function addQBankQuestion(){
   const tag=document.getElementById('qb-tag').value.trim();
   const explain=document.getElementById('qb-explain').value.trim();
   if(!q||!a||!b||!c||!d||!correct){alert('Fill question, all options and correct answer');return;}
-  const{db,ref,push,set}=window.fb;
+  const{db,ref,push,set}=window.fb2;
   const payload={q,options:{A:a,B:b,C:c,D:d},correct};
   if(tag)payload.tag=tag;
   if(explain)payload.explain=explain;
@@ -1630,7 +1630,7 @@ async function addQBankQuestion(){
 }
 async function deleteQBankQuestion(id){
   if(!confirm('Delete this question?'))return;
-  await window.fb.remove(window.fb.ref(window.fb.db,`question-bank/sat/${id}`));
+  await window.fb2.remove(window.fb2.ref(window.fb2.db,`question-bank/sat/${id}`));
   showSuccess('Deleted!');loadQBankAdmin();
 }
 
@@ -1706,9 +1706,21 @@ if(window.fb){loadAdminAll();loadMockTests();loadQBankAdmin();}
   };
 
   const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
+  const db  = getDatabase(app);
 
-  window.fb = { db, ref, get, set, push, remove };
+  const app2 = initializeApp({
+    apiKey: "AIzaSyDOt_G1cP7GKogZ4A_5LjPYX1VAO_JDR7M",
+    authDomain: "luminary-46748.firebaseapp.com",
+    databaseURL: "https://luminary-46748-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "luminary-46748",
+    storageBucket: "luminary-46748.firebasestorage.app",
+    messagingSenderId: "43189176496",
+    appId: "1:43189176496:web:dc79880e682e4dea7e9375"
+  }, 'secondary');
+  const db2 = getDatabase(app2);
+
+  window.fb  = { db,  ref, get, set, push, remove };
+  window.fb2 = { db: db2, ref, get, set, push, remove };
   window.dispatchEvent(new Event('fbReady'));
 </script>
 </body>
