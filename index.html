@@ -542,7 +542,16 @@ let undoState=null,undoTimer=null;
 //  UTILS
 // =============================================
 function esc(s){return(s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');}
-function toggleSec(id){document.getElementById(id).classList.toggle('collapsed');}
+function toggleSec(id){
+  const el=document.getElementById(id);
+  const wasCollapsed=el.classList.contains('collapsed');
+  el.classList.toggle('collapsed');
+  // Lazy-load photo data only when the Hacks section is first expanded
+  if(wasCollapsed && id==='as-hacks-photos' && !el.dataset.photosLoaded){
+    el.dataset.photosLoaded='1';
+    PHOTO_SUBS.forEach(sub=>{loadAdminPhotos(sub.id);loadAdminTexts(sub.id);});
+  }
+}
 
 function showSuccess(msg){
   const el=document.createElement('div');
@@ -1420,7 +1429,7 @@ function renderAdminPhotoSections(){
       <div id="admin-photos-${sub.id}" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;"></div>
       <div id="admin-texts-${sub.id}" style="margin-top:8px;"></div>
     </div>`).join('');
-  PHOTO_SUBS.forEach(sub=>{loadAdminPhotos(sub.id);loadAdminTexts(sub.id);});
+  // Photos loaded lazily when section is first expanded (see toggleSec)
 }
 async function addTextBlock(subId){
   const title=(document.getElementById(`text-title-${subId}`)?.value||'').trim();
