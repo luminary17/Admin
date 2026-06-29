@@ -575,6 +575,9 @@ function previewImg(input,previewId,dataId){
   reader.readAsDataURL(file);
 }
 
+// DB path prefix map — 'rules' data lives under 'sat-rules-*' in Firebase
+function dp(type){ return ({rules:'sat-rules'})[type] || type; }
+
 // =============================================
 //  LOAD ALL ADMIN DATA
 // =============================================
@@ -1037,7 +1040,7 @@ async function createContentFolder(type){
 }
 async function loadContentFolders(type){
   const{db,ref,get}=window.fb;
-  const snap=await get(ref(db,`${type}-folders`));
+  const snap=await get(ref(db,`${dp(type)}-folders`));
   const folders=snap.val()?Object.keys(snap.val()).map(k=>({id:k,...snap.val()[k]})):[];
   ['rules-folder-sel','rules-fq-folder-sel'].forEach(selId=>{
     const sel=document.getElementById(selId);
@@ -1048,7 +1051,7 @@ async function loadContentFolders(type){
 }
 async function delContentFolder(type,id){
   if(!confirm('Delete folder?'))return;
-  await window.fb.remove(window.fb.ref(window.fb.db,`${type}-folders/${id}`));
+  await window.fb.remove(window.fb.ref(window.fb.db,`${dp(type)}-folders/${id}`));
   showSuccess('Deleted!');await loadContentFolders(type);
 }
 async function saveFolderQuiz(type){
@@ -1059,7 +1062,7 @@ async function saveFolderQuiz(type){
   let questions;
   try{questions=JSON.parse(raw);}catch(e){alert('Invalid JSON: '+e.message);return;}
   const{db,ref,set}=window.fb;
-  await set(ref(db,`${type}-folder-quizzes/${fid}`),{name,questions,updatedAt:Date.now()});
+  await set(ref(db,`${dp(type)}-folder-quizzes/${fid}`),{name,questions,updatedAt:Date.now()});
   document.getElementById(`${type}-fq-name`).value='';
   document.getElementById(`${type}-fq-data`).value='';
   showSuccess('Folder quiz saved! ✅');
@@ -1071,7 +1074,7 @@ async function saveContentItem(type){
   const body=document.getElementById(`${type}-body`).value.trim();
   if(!fid||!title||!body){alert('Fill folder, title and content');return;}
   const{db,ref,get,set,push}=window.fb;
-  const fs=await get(ref(db,`${type}-folders/${fid}`));
+  const fs=await get(ref(db,`${dp(type)}-folders/${fid}`));
   const folderName=fs.val()?.name||'';
   const q=document.getElementById(`${type}-q`)?.value.trim();
   const a=document.getElementById(`${type}-a`)?.value.trim();
@@ -1083,11 +1086,11 @@ async function saveContentItem(type){
   const item={title,body,folder:fid,folderName};
   if(q&&a&&b&&correct)item.quiz={q,options:{A:a,B:b,C:c,D:d},correct,explain};
   if(editingContentId&&editingContentType===type){
-    const ex=(await get(ref(db,`${type}-items/${editingContentId}`))).val()||{};
-    await set(ref(db,`${type}-items/${editingContentId}`),{...ex,...item});
+    const ex=(await get(ref(db,`${dp(type)}-items/${editingContentId}`))).val()||{};
+    await set(ref(db,`${dp(type)}-items/${editingContentId}`),{...ex,...item});
     showSuccess('Updated! ✅');cancelContentEdit(type);
   }else{
-    await set(push(ref(db,`${type}-items`)),item);
+    await set(push(ref(db,`${dp(type)}-items`)),item);
     showSuccess('Added! ✅');
   }
   ['title','body','q','a','b','c','d','explain'].forEach(f=>{const el=document.getElementById(`${type}-${f}`);if(el)el.value='';});
@@ -1096,10 +1099,10 @@ async function saveContentItem(type){
 }
 async function loadContentItems(type){
   const{db,ref,get}=window.fb;
-  const snap=await get(ref(db,`${type}-items`)).catch(()=>({val:()=>null}));
+  const snap=await get(ref(db,`${dp(type)}-items`)).catch(()=>({val:()=>null}));
   const items=snap.val()?Object.keys(snap.val()).map(k=>({id:k,...snap.val()[k]})):[];
   let folderQuizzes={};
-  try{const fqSnap=await get(ref(db,`${type}-folder-quizzes`));folderQuizzes=fqSnap.val()||{};}catch(e){}
+  try{const fqSnap=await get(ref(db,`${dp(type)}-folder-quizzes`));folderQuizzes=fqSnap.val()||{};}catch(e){}
   const el=document.getElementById(`${type}-items-list`);
   if(!el)return;
   if(!items.length){el.innerHTML='<p style="color:#aaa;text-align:center;padding:12px;font-size:13px;">No items yet</p>';return;}
@@ -1125,7 +1128,7 @@ async function loadContentItems(type){
 }
 async function startEditContent(type,id){
   const{db,ref,get}=window.fb;
-  const snap=await get(ref(db,`${type}-items/${id}`));
+  const snap=await get(ref(db,`${dp(type)}-items/${id}`));
   const it=snap.val();if(!it)return;
   editingContentId=id;editingContentType=type;
   document.getElementById(`${type}-title`).value=it.title||'';
@@ -1148,7 +1151,7 @@ function cancelContentEdit(type){
   document.getElementById(`${type}-cancel-btn`).style.display='none';
 }
 async function delContentItem(type,id){
-  await window.fb.remove(window.fb.ref(window.fb.db,`${type}-items/${id}`));
+  await window.fb.remove(window.fb.ref(window.fb.db,`${dp(type)}-items/${id}`));
   showSuccess('Deleted!');await loadContentItems(type);
 }
 
@@ -1735,4 +1738,7 @@ if(window.fb){loadAdminAll();loadMockTests();loadQBankAdmin();}
 
   window.fb  = { db,  ref, get, set, push, remove };
   window.fb2 = { db: db2, ref, get, set, push, remove };
-  window.dispatchEvent(new Event(
+  window.dispatchEvent(new Event('fbReady'));
+</script>
+</body>
+</html>
