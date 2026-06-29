@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://apis.google.com https://*.firebasedatabase.app; script-src-elem 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com https://*.firebasedatabase.app; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://*.firebasedatabase.app https://www.gstatic.com wss://*.firebaseio.com wss://*.firebasedatabase.app; frame-src https://*.firebasedatabase.app; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com;">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://apis.google.com https://*.firebasedatabase.app; script-src-elem 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com https://*.firebasedatabase.app; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://*.firebasedatabase.app https://firebasestorage.googleapis.com https://www.gstatic.com wss://*.firebaseio.com wss://*.firebasedatabase.app; frame-src https://*.firebasedatabase.app; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com;">
 <title>Luminary — Admin Panel</title>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -1097,10 +1097,10 @@ async function saveContentItem(type){
 }
 async function loadContentItems(type){
   const{db,ref,get}=window.fb;
-  const snap=await get(ref(db,`${type}-items`));
+  const snap=await get(ref(db,`${type}-items`)).catch(()=>({val:()=>null}));
   const items=snap.val()?Object.keys(snap.val()).map(k=>({id:k,...snap.val()[k]})):[];
-  const fqSnap=await get(ref(db,`${type}-folder-quizzes`));
-  const folderQuizzes=fqSnap.val()||{};
+  let folderQuizzes={};
+  try{const fqSnap=await get(ref(db,`${type}-folder-quizzes`));folderQuizzes=fqSnap.val()||{};}catch(e){}
   const el=document.getElementById(`${type}-items-list`);
   if(!el)return;
   if(!items.length){el.innerHTML='<p style="color:#aaa;text-align:center;padding:12px;font-size:13px;">No items yet</p>';return;}
@@ -1462,17 +1462,20 @@ async function deleteTextBlock(subId,textId){
 }
 async function uploadPhoto(input,subId){
   const file=input.files[0];if(!file)return;
-  const title=document.getElementById(`photo-title-${subId}`).value.trim();
-  const reader=new FileReader();
-  reader.onload=async e=>{
-    const data=e.target.result;
+  const title=(document.getElementById(`photo-title-${subId}`)?.value||'').trim();
+  showSuccess('Uploading… ⏳');
+  try{
+    const{storage,ref:sr,uploadBytes,getDownloadURL}=window.fbStorage;
+    const snap=await uploadBytes(sr(storage,`photo-sections/${subId}/${Date.now()}_${file.name.replace(/[^\w.-]/g,'_')}`),file);
+    const url=await getDownloadURL(snap.ref);
     const{db,ref,push,set}=window.fb;
-    await set(push(ref(db,`photo-sections/${subId}`)),{data,title,addedAt:Date.now()});
-    document.getElementById(`photo-title-${subId}`).value='';
+    await set(push(ref(db,`photo-sections/${subId}`)),{data:url,title,addedAt:Date.now()});
+    const titleEl=document.getElementById(`photo-title-${subId}`);if(titleEl)titleEl.value='';
     input.value='';
-    loadAdminPhotos(subId);showSuccess('Photo uploaded!');
-  };
-  reader.readAsDataURL(file);
+    loadAdminPhotos(subId);showSuccess('Photo uploaded! ✅');
+  }catch(e){
+    alert('Upload failed: '+e.message+'\n\nMake sure Firebase Storage rules allow writes (see instructions).');
+  }
 }
 async function loadAdminPhotos(subId){
   try{
@@ -1483,7 +1486,7 @@ async function loadAdminPhotos(subId){
     if(!el)return;
     el.innerHTML=photos.map(p=>`
       <div style="position:relative;display:inline-block;">
-        <img src="${p.data}" style="width:60px;height:46px;object-fit:cover;border-radius:7px;cursor:pointer;" onclick="openLightbox('${p.data}')">
+        <img src="${p.data}" style="width:60px;height:46px;object-fit:cover;border-radius:7px;cursor:pointer;" onclick="openLightbox(this.src)">
         <button onclick="deletePhoto('${subId}','${p.id}')" style="position:absolute;top:-5px;right:-5px;background:#ff4444;border:none;color:#fff;width:16px;height:16px;border-radius:50%;cursor:pointer;font-size:10px;display:flex;align-items:center;justify-content:center;padding:0;">×</button>
       </div>`).join('');
   }catch(e){}
@@ -1703,6 +1706,7 @@ if(window.fb){loadAdminAll();loadMockTests();loadQBankAdmin();}
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getDatabase, ref, get, set, push, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+  import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyCdA6I-a8eYZz1NFUpctYLIa-h56Rh1jNU",
@@ -1716,6 +1720,8 @@ if(window.fb){loadAdminAll();loadMockTests();loadQBankAdmin();}
 
   const app = initializeApp(firebaseConfig);
   const db  = getDatabase(app);
+  const storage = getStorage(app);
+  window.fbStorage = { storage, ref: sRef, uploadBytes, getDownloadURL };
 
   const app2 = initializeApp({
     apiKey: "AIzaSyDOt_G1cP7GKogZ4A_5LjPYX1VAO_JDR7M",
