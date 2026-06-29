@@ -1735,7 +1735,4 @@ if(window.fb){loadAdminAll();loadMockTests();loadQBankAdmin();}
 
   window.fb  = { db,  ref, get, set, push, remove };
   window.fb2 = { db: db2, ref, get, set, push, remove };
-  window.dispatchEvent(new Event('fbReady'));
-</script>
-</body>
-</html>
+  window.dispatchEvent(new Event(
