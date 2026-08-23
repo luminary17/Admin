@@ -232,6 +232,36 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--txt);min-h
     </div>
   </div>
 
+  <div class="admin-sec collapsed" id="as-daily-question">
+    <div class="admin-sec-head" onclick="toggleSec('as-daily-question')">
+      <h3>Daily Question</h3><span class="admin-sec-arrow">▼</span>
+    </div>
+    <div class="admin-sec-body">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.5;">This is separate from Question Bank. It is visible on Home for exactly 24 hours after publishing.</p>
+      <div style="background:var(--bg);padding:16px;border-radius:13px;margin-bottom:14px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="form-group"><label>Exam</label><select id="daily-exam"><option value="sat">SAT</option><option value="ielts">IELTS</option></select></div>
+          <div class="form-group"><label>Section</label><select id="daily-set"><option value="rw">Reading &amp; Writing</option><option value="math">Math</option><option value="listening">Listening</option><option value="reading">Reading</option><option value="writing">Writing</option><option value="speaking">Speaking</option></select></div>
+        </div>
+        <div class="form-group"><label>Topic</label><input id="daily-tag" placeholder="e.g. Information and Ideas"></div>
+        <div class="form-group"><label>Passage or reference <span style="font-weight:400;color:var(--muted);">(optional)</span></label><textarea id="daily-passage" placeholder="Text shown on the left side of the question."></textarea></div>
+        <div class="form-group"><label>Question</label><textarea id="daily-q" placeholder="Write the question shown on the right."></textarea></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="form-group"><label>Option A</label><input id="daily-a"></div><div class="form-group"><label>Option B</label><input id="daily-b"></div>
+          <div class="form-group"><label>Option C</label><input id="daily-c"></div><div class="form-group"><label>Option D</label><input id="daily-d"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="form-group"><label>Correct answer</label><select id="daily-correct"><option value="">Select...</option><option>A</option><option>B</option><option>C</option><option>D</option></select></div>
+          <div class="form-group"><label>Explanation <span style="font-weight:400;color:var(--muted);">(optional)</span></label><input id="daily-explain"></div>
+        </div>
+        <div class="form-group"><label>Question image <span style="font-weight:400;color:var(--muted);">(optional)</span></label><input type="file" accept="image/*" onchange="loadRecordImage(this,'daily')"><img id="daily-image-preview" style="display:none;max-width:180px;max-height:120px;object-fit:contain;border-radius:9px;margin-top:8px;"></div>
+        <button class="btn-primary" onclick="publishDailyQuestion()">Publish for 24 hours</button>
+        <button class="btn-cancel" onclick="clearDailyQuestion()">Remove current daily question</button>
+      </div>
+      <div id="daily-admin-status"></div>
+    </div>
+  </div>
+
   <!-- IELTS PREP -->
   <div class="admin-sec collapsed" id="as-ielts-prep">
     <div class="admin-sec-head" onclick="toggleSec('as-ielts-prep')">
@@ -600,7 +630,7 @@ function renderJsonImporter(containerId,kind,title,example){
   </div>`;
 }
 const materialJsonCache={};
-const recordImages={mock:'',qbank:''};
+const recordImages={mock:'',qbank:'',daily:''};
 const SAT_QBANK_CATEGORIES={
   rw:['Information and Ideas','Craft and Structure','Expression of Ideas','Standard English Conventions'],
   math:['Algebra','Advanced Math','Problem-Solving and Data Analysis','Geometry and Trigonometry']
@@ -1781,6 +1811,45 @@ async function deleteQBankQuestion(exam,id){
   showSuccess('Deleted!');loadQBankAdmin();
 }
 
+async function loadDailyQuestionAdmin(){
+  const el=document.getElementById('daily-admin-status');if(!el||!window.fb2)return;
+  const{db,ref,get}=window.fb2;
+  try{
+    const [sat,ielts]=await Promise.all([get(ref(db,'daily-questions/sat/current')),get(ref(db,'daily-questions/ielts/current'))]);
+    const cards=[['SAT',sat.val()],['IELTS',ielts.val()]].map(([exam,item])=>{
+      if(!item)return `<div class="item-row"><div class="item-row-info"><div class="item-row-title">${exam}</div><div class="item-row-sub">No active daily question</div></div></div>`;
+      const active=Number(item.expiresAt||0)>Date.now();
+      const expiry=Number(item.expiresAt||0)?new Date(Number(item.expiresAt)).toLocaleString():'';
+      return `<div class="item-row"><div class="item-row-info"><div class="item-row-title">${exam}: ${item.q||'Untitled question'}</div><div class="item-row-sub">${active?'Active until':'Expired'} ${expiry}</div></div></div>`;
+    });
+    el.innerHTML=cards.join('');
+  }catch(e){el.innerHTML=`<p style="color:#fca5a5;font-size:13px;">Could not load daily question: ${e.message}</p>`;}
+}
+
+async function publishDailyQuestion(){
+  const value=id=>document.getElementById(id).value.trim();
+  const exam=value('daily-exam'),set=value('daily-set'),tag=value('daily-tag'),q=value('daily-q'),passage=value('daily-passage');
+  const answers={A:value('daily-a'),B:value('daily-b'),C:value('daily-c'),D:value('daily-d')};
+  const correct=value('daily-correct'),explain=value('daily-explain');
+  if(!tag||!q||!correct||!Object.values(answers).every(Boolean)){alert('Fill topic, question, all four options, and the correct answer.');return;}
+  const publishedAt=Date.now();
+  const payload={q,options:answers,correct,set,tag,publishedAt,expiresAt:publishedAt+(24*60*60*1000)};
+  if(passage)payload.passage=passage;if(explain)payload.explain=explain;if(recordImages.daily)payload.image=recordImages.daily;
+  try{
+    const{db,ref,set:write}=window.fb2;await write(ref(db,`daily-questions/${exam}/current`),payload);
+    ['daily-tag','daily-passage','daily-q','daily-a','daily-b','daily-c','daily-d','daily-explain'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('daily-correct').value='';clearRecordImage('daily');
+    showSuccess('Daily question published for 24 hours.');loadDailyQuestionAdmin();
+  }catch(e){alert(`Could not publish: ${e.message}`);}
+}
+
+async function clearDailyQuestion(){
+  if(!confirm('Remove the current daily question for the selected exam?'))return;
+  const exam=document.getElementById('daily-exam').value;
+  try{await window.fb2.remove(window.fb2.ref(window.fb2.db,`daily-questions/${exam}/current`));showSuccess('Daily question removed.');loadDailyQuestionAdmin();}
+  catch(e){alert(`Could not remove: ${e.message}`);}
+}
+
 // =============================================
 //  MOCK TESTS
 // =============================================
@@ -1835,8 +1904,9 @@ window.addEventListener('fbReady',()=>{
   loadAdminAll();
   loadMockTests();
   loadQBankAdmin();
+  loadDailyQuestionAdmin();
 });
-if(window.fb){initMaterialJsonImporters();loadAdminAll();loadMockTests();loadQBankAdmin();}
+if(window.fb){initMaterialJsonImporters();loadAdminAll();loadMockTests();loadQBankAdmin();loadDailyQuestionAdmin();}
 </script>
 
 <!-- FIREBASE SDK -->
