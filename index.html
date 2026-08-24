@@ -205,7 +205,8 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--txt);min-h
     </div>
     <div class="admin-sec-body">
       <div style="background:var(--bg);padding:16px;border-radius:13px;margin-bottom:14px;">
-        <div class="form-group"><label>Question</label><textarea id="qb-q" placeholder="e.g. Which of the following best describes..." style="min-height:72px;"></textarea></div>
+        <div class="form-group"><label>Passage / text on the left <span style="font-weight:400;color:#bbb;">(optional)</span></label><textarea id="qb-passage" placeholder="Paste the reading text, reference information, or written setup here." style="min-height:110px;"></textarea></div>
+        <div class="form-group"><label>Question on the right</label><textarea id="qb-q" placeholder="e.g. Which of the following best describes..." style="min-height:72px;"></textarea></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
           <div class="form-group"><label>Option A</label><input id="qb-a" placeholder="Answer A"></div>
           <div class="form-group"><label>Option B</label><input id="qb-b" placeholder="Answer B"></div>
@@ -688,6 +689,7 @@ function normalizeMaterialRecord(kind,item,index){
     const correct=typeof rawCorrect==='number'?'ABCD'[rawCorrect]:String(rawCorrect||'').toUpperCase();
     if(!q||!options||!['A','B','C','D'].every(k=>String(options[k]===undefined?'':options[k]).trim())||!['A','B','C','D'].includes(correct))throw new Error(`Item ${index+1}: question, four answers, and correct answer are required`);
     const record={q,options:{A:String(options.A),B:String(options.B),C:String(options.C),D:String(options.D)},correct};
+    const passage=item.passage||item.reference||item.text||item.stimulus;if(passage)record.passage=String(passage);
     const tag=item.theme||item.category||item.tag||item.domain||item.topic,explain=item.explain||item.explanation;
     const section=item.set||item.section;if(!tag||!section)throw new Error(`Item ${index+1}: section and theme are required`);
     record.tag=String(tag);record.set=String(section).toLowerCase();if(explain)record.explain=String(explain);
@@ -1806,6 +1808,7 @@ async function deleteSelectedQBankItems(){
 }
 async function addQBankQuestion(){
   const q=document.getElementById('qb-q').value.trim();
+  const passage=document.getElementById('qb-passage').value.trim();
   const a=document.getElementById('qb-a').value.trim();
   const b=document.getElementById('qb-b').value.trim();
   const c=document.getElementById('qb-c').value.trim();
@@ -1818,6 +1821,7 @@ async function addQBankQuestion(){
   if(!q||!a||!b||!c||!d||!correct||!tag){alert('Fill question, section, theme, all options and correct answer');return;}
   const{db,ref,push,set}=window.fb2;
   const payload={q,options:{A:a,B:b,C:c,D:d},correct,set:section};
+  if(passage)payload.passage=passage;
   if(tag)payload.tag=tag;
   if(explain)payload.explain=explain;
   if(recordImages.qbank)payload.image=recordImages.qbank;
@@ -1825,7 +1829,7 @@ async function addQBankQuestion(){
     if(editingQBank.exam!==exam)await window.fb2.remove(ref(db,`question-bank/${editingQBank.exam}/${editingQBank.id}`));
     await set(ref(db,`question-bank/${exam}/${editingQBank.id}`),payload);
   }else await set(push(ref(db,`question-bank/${exam}`)),payload);
-  ['qb-q','qb-a','qb-b','qb-c','qb-d','qb-explain','qb-ielts-theme'].forEach(id=>document.getElementById(id).value='');
+  ['qb-passage','qb-q','qb-a','qb-b','qb-c','qb-d','qb-explain','qb-ielts-theme'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('qb-correct').value='';
   clearRecordImage('qbank');
   editingQBank=null;document.getElementById('qb-save-btn').textContent='Add Question';document.getElementById('qb-cancel-btn').style.display='none';
@@ -1835,7 +1839,7 @@ async function addQBankQuestion(){
 function editQBankQuestion(exam,id){
   const item=window.qbankAdminItems?.[`${exam}:${id}`];if(!item)return;
   editingQBank={exam,id};
-  document.getElementById('qb-q').value=item.q||'';document.getElementById('qb-a').value=item.options?.A||'';document.getElementById('qb-b').value=item.options?.B||'';document.getElementById('qb-c').value=item.options?.C||'';document.getElementById('qb-d').value=item.options?.D||'';
+  document.getElementById('qb-passage').value=item.passage||item.reference||item.text||item.stimulus||'';document.getElementById('qb-q').value=item.q||'';document.getElementById('qb-a').value=item.options?.A||'';document.getElementById('qb-b').value=item.options?.B||'';document.getElementById('qb-c').value=item.options?.C||'';document.getElementById('qb-d').value=item.options?.D||'';
   document.getElementById('qb-correct').value=item.correct||'';document.getElementById('qb-explain').value=item.explain||'';document.getElementById('qb-exam').value=exam;updateQBankCategories();
   const sectionSelect=document.getElementById('qb-section'),savedSet=item.set||'rw';
   if(![...sectionSelect.options].some(option=>option.value===savedSet))sectionSelect.insertAdjacentHTML('beforeend',`<option value="${savedSet}">${savedSet} (existing)</option>`);
@@ -1849,7 +1853,7 @@ function editQBankQuestion(exam,id){
   document.getElementById('qb-save-btn').textContent='Update Question';document.getElementById('qb-cancel-btn').style.display='block';document.getElementById('as-qbank').classList.remove('collapsed');window.scrollTo({top:0,behavior:'smooth'});
 }
 function cancelQBankEdit(){
-  editingQBank=null;['qb-q','qb-a','qb-b','qb-c','qb-d','qb-explain','qb-ielts-theme'].forEach(id=>document.getElementById(id).value='');document.getElementById('qb-correct').value='';clearRecordImage('qbank');document.getElementById('qb-save-btn').textContent='Add Question';document.getElementById('qb-cancel-btn').style.display='none';
+  editingQBank=null;['qb-passage','qb-q','qb-a','qb-b','qb-c','qb-d','qb-explain','qb-ielts-theme'].forEach(id=>document.getElementById(id).value='');document.getElementById('qb-correct').value='';clearRecordImage('qbank');document.getElementById('qb-save-btn').textContent='Add Question';document.getElementById('qb-cancel-btn').style.display='none';
 }
 async function deleteQBankQuestion(exam,id){
   if(!confirm('Delete this question?'))return;
